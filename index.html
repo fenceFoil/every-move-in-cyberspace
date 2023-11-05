@@ -230,6 +230,19 @@
            height: 100%;
            position: absolute;
         }
+
+        #webcamButton {
+            position: absolute;
+            top: 45%;
+            left: 30%;
+            scale: 3;
+            z-index: 200;
+        }
+
+        video {
+            width: 640px;
+            height: 360px;
+        }
     </style>
 
     <script type="module">
@@ -289,7 +302,7 @@
         function enableCam(event) {
             canvasElement.style.display = "block";
             if (!poseLandmarker) {
-                console.log("Wait! Detectors not loaded yet.");
+                console.log("Wait! tors not loaded yet.");
                 return;
             }
 
@@ -381,8 +394,6 @@
         async function predictWebcam() {
             canvasElement.style.height = "100%";
             canvasElement.style.width = "100%";
-            video.style.height = videoHeight;
-            video.style.width = videoWidth;
 
             let startTimeMs = performance.now();
             if (lastVideoTime !== video.currentTime) {
@@ -418,7 +429,7 @@
             <!--Don't Copy The Moves Dude-->
             You Wouldn't Copy A Move
         </div>
-        <audio preload="auto" autobuffer="">
+        <audio id="bgMusic" preload="auto" autobuffer="">
             <source src="media/floralshoppe-49sish.mp3">
         </audio>
         <div id="score">878</div>
@@ -431,13 +442,13 @@
                     <button aria-label="Close"></button>
                 </div>
             </div>
+            <button id="webcamButton" class="mdc-button mdc-button--raised">
+                ENABLE WEBCAM
+            </button>
             <div id="demos">
                 <video id="webcam" autoplay playsinline></video>
                 <canvas id="output_canvas" style="position:absolute;top:0;left:0;display:none"></canvas>
-                <button id="webcamButton" class="mdc-button mdc-button--raised">
-                    <span class="mdc-button__ripple"></span>
-                    <span class="mdc-button__label">ENABLE WEBCAM</span>
-                  </button>
+
             </div>
             <div id="slabAttract" x-show="!getIngame()">
                 <button @click="startGame" id="startGameButton">Start Game</button>
