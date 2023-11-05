@@ -18,6 +18,7 @@
 
         body {
             height: 100%;
+            overflow: hidden;
         }
         
         #app {
@@ -32,6 +33,29 @@
             font-size:3em;
         }
 
+        pre{
+            z-index: 2;
+
+
+            
+        }
+
+        .cyberspaceBG {
+            transform: scale3d(1, 1, 1) rotateX(54deg) rotateY(0deg) rotateZ(0deg) translate3d(0px, 0px, 0px) skew(0deg, 0deg);
+            background-color: aqua;
+            height: 100vh;
+            width: 100vw;
+        }
+        .cyberspaceBG-wrap {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            perspective: 260px;
+            perspective-origin: 50% 50%;
+        }
+
     </style>
 
     <script>
@@ -44,6 +68,9 @@
     <script src="chance.min.js"></script>
     <div id="app" x-data="d">
         <pre>G   A   M   E</pre>
+        <div class="cyberspaceBG-wrap">
+            <div class="cyberspaceBG"> </div>
+        </div>
     </div>
     <script>
         document.addEventListener('alpine:init', () => {
