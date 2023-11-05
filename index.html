@@ -10,10 +10,13 @@
     <link rel="icon" href="favicon.ico">
     <link rel="stylesheet" href="normalize.css">
     <link rel="stylesheet" href="98.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
     <title>Every Move in Cyberspace</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital@0;1&family=Public+Sans&display=swap');
-
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
         @font-face {
@@ -22,7 +25,9 @@
         }
 
         /* alpinejs */
-        [x-cloak] { display: none !important; }
+        [x-cloak] {
+            display: none !important;
+        }
 
         body {
             height: 100%;
@@ -34,7 +39,7 @@
             --columnScale: 1;
             --columnHueIntensity: 0.5;
         }
-        
+
         #app {
             background: linear-gradient(cyan, black 40%, black);
             background-size: cover;
@@ -44,14 +49,14 @@
             height: calc(100dvh);
             padding: 1em;
             font-family: 'Merriweather', serif;
-            font-size:3em;
+            font-size: 3em;
             z-index: 5;
         }
 
         .majestic-column {
             background-size: cover;
             background-repeat: no-repeat;
-            background-image: url(media/stone-column.png);        
+            background-image: url(media/stone-column.png);
             z-index: 10;
             position: absolute;
             left: 5dvw;
@@ -73,7 +78,10 @@
 
         .majestic-column::after {
             position: absolute;
-            top: 0; bottom: 0; left: 0; right: 0;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
             content: " ";
             opacity: 0.8;
             filter: hue-rotate(var(--columnHue));
@@ -94,6 +102,7 @@
             height: 100vh;
             width: 100vw;
         }
+
         .cyberspaceBG-wrap {
             position: absolute;
             top: 0;
@@ -125,7 +134,7 @@
             font-size: 4em;
             filter: blur(2px);
             z-index: 100;
-            text-shadow: -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 4px 4px 0 #000;   
+            text-shadow: -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 4px 4px 0 #000;
         }
 
         #slab {
@@ -139,8 +148,7 @@
             aspect-ratio: 16/9;
         }
 
-        #slab .title-bar {
-        }
+        #slab .title-bar {}
 
         #playerHead {
             background-image: url(media/bust-small.png);
@@ -172,8 +180,8 @@
             bottom: 8%;
             font-size: 3em;
             color: lime;
-            text-align: center;   
-            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;   
+            text-align: center;
+            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
         }
 
         #ghostHead {
@@ -194,20 +202,210 @@
             display: grid;
             place-items: center;
         }
+
         #startGameButton {
             transform: scale(8);
         }
-
     </style>
 
-    <script>
+    <script type="module">
+        import {
+            HandLandmarker,
+            PoseLandmarker,
+            FaceDetector,
+            FilesetResolver,
+            DrawingUtils
+        } from "https://cdn.skypack.dev/@mediapipe/tasks-vision@0.10.0";
+
+
+        const demosSection = document.getElementById("demos");
+
+        let handLandmarker = undefined;
+        let poseLandmarker = undefined;
+        let faceDetector = undefined;
+        let runningMode = "VIDEO";
+        let enableWebcamButton;
+        let webcamRunning = false;
+        const videoHeight = "360px";
+        const videoWidth = "480px";
+
+        const createDetectors = async () => {
+            const vision = await FilesetResolver.forVisionTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+            );
+
+            // handLandmarker = await HandLandmarker.createFromOptions(vision, {
+            //     baseOptions: {
+            //         modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+            //         delegate: "GPU"
+            //     },
+            //     runningMode: runningMode,
+            //     numHands: 2
+            // });
+
+            poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+                baseOptions: {
+                    modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
+                    delegate: "GPU"
+                },
+                runningMode: runningMode,
+                numPoses: 2
+            });
+
+            // faceDetector = await FaceDetector.createFromOptions(vision, {
+            //     baseOptions: {
+            //         modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`,
+            //         delegate: "GPU"
+            //     },
+            //     runningMode: runningMode
+            // });
+
+            demosSection.classList.remove("invisible");
+        };
+
+        createDetectors();
+
+        const video = document.getElementById("webcam");
+        const canvasElement = document.getElementById("output_canvas");
+        const canvasCtx = canvasElement.getContext("2d");
+        const drawingUtils = new DrawingUtils(canvasCtx);
+
+        const hasGetUserMedia = () => !!navigator.mediaDevices && !!navigator.mediaDevices.getUserMedia;
+
+        if (hasGetUserMedia()) {
+            enableWebcamButton = document.getElementById("webcamButton");
+            enableWebcamButton.addEventListener("click", enableCam);
+        } else {
+            console.warn("getUserMedia() is not supported by your browser");
+        }
+
+        function enableCam(event) {
+            canvasElement.style.display = "block";
+            if (!poseLandmarker) {
+                console.log("Wait! Detectors not loaded yet.");
+                return;
+            }
+
+            if (webcamRunning === true) {
+                webcamRunning = false;
+                enableWebcamButton.innerText = "ENABLE PREDICTIONS";
+            } else {
+                webcamRunning = true;
+                enableWebcamButton.innerText = "DISABLE PREDICTIONS";
+            }
+
+            const constraints = {
+                video: true
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+                video.srcObject = stream;
+                video.addEventListener("loadeddata", predictWebcam);
+            });
+        }
+
+
+        var faceChildren = [];
+        function displayFaceVideoDetections(detections) {
+            // Remove any highlighting from previous frame.
+
+            for (let child of faceChildren) {
+                liveView.removeChild(child);
+            }
+            faceChildren.splice(0);
+
+            // Iterate through predictions and draw them to the live view
+            for (let detection of detections) {
+                const p = document.createElement("p");
+                p.innerText =
+                    "Confidence: " +
+                    Math.round(parseFloat(detection.categories[0].score) * 100) +
+                    "% .";
+                p.style =
+                    "left: " +
+                    (video.offsetWidth -
+                        detection.boundingBox.width -
+                        detection.boundingBox.originX) +
+                    "px;" +
+                    "top: " +
+                    (detection.boundingBox.originY - 30) +
+                    "px; " +
+                    "width: " +
+                    (detection.boundingBox.width - 10) +
+                    "px;";
+
+                const highlighter = document.createElement("div");
+                highlighter.setAttribute("class", "highlighter");
+                highlighter.style =
+                    "left: " +
+                    (video.offsetWidth -
+                        detection.boundingBox.width -
+                        detection.boundingBox.originX) +
+                    "px;" +
+                    "top: " +
+                    detection.boundingBox.originY +
+                    "px;" +
+                    "width: " +
+                    (detection.boundingBox.width - 10) +
+                    "px;" +
+                    "height: " +
+                    detection.boundingBox.height +
+                    "px;";
+
+                liveView.appendChild(highlighter);
+                liveView.appendChild(p);
+
+                // Store drawn objects in memory so they are queued to delete at next call
+                faceChildren.push(highlighter);
+                faceChildren.push(p);
+                for (let keypoint of detection.keypoints) {
+                    const keypointEl = document.createElement("spam");
+                    keypointEl.className = "key-point";
+                    keypointEl.style.top = `${keypoint.y * video.offsetHeight - 3}px`;
+                    keypointEl.style.left = `${video.offsetWidth - keypoint.x * video.offsetWidth - 3
+                        }px`;
+                    liveView.appendChild(keypointEl);
+                    faceChildren.push(keypointEl);
+                }
+            }
+        }
+
+        let lastVideoTime = -1;
+        async function predictWebcam() {
+            canvasElement.style.height = "100%";
+            canvasElement.style.width = "100%";
+            video.style.height = videoHeight;
+            video.style.width = videoWidth;
+
+            let startTimeMs = performance.now();
+            if (lastVideoTime !== video.currentTime) {
+                lastVideoTime = video.currentTime;
+
+                const poseLandmarkerResult = poseLandmarker.detectForVideo(video, startTimeMs);
+                canvasCtx.save();
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+                for (const landmark of poseLandmarkerResult.landmarks) {
+                    drawingUtils.drawLandmarks(landmark, {
+                        radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+                    });
+                    drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
+                }
+
+                canvasCtx.restore();
+            }
+
+            if (webcamRunning === true) {
+                window.requestAnimationFrame(predictWebcam);
+            }
+        }
 
     </script>
 </head>
 
 <body>
     <script src="//unpkg.com/alpinejs" defer></script>
-    <script src="chance.min.js"></script>
+    <script src="/combined.js"></script>
     <div id="app" x-data="d" :style="getBodyStyles()">
         <div id="gametitle">
             Don't Copy The Moves Dude
@@ -220,7 +418,15 @@
                     <button aria-label="Minimize"></button>
                     <button aria-label="Maximize"></button>
                     <button aria-label="Close"></button>
-                  </div>
+                </div>
+            </div>
+            <div id="demos">
+                <video id="webcam" autoplay playsinline style="display:none"></video>
+                <canvas id="output_canvas" style="position:absolute;top:0;left:0;display:none"></canvas>
+                <button id="webcamButton" class="mdc-button mdc-button--raised">
+                    <span class="mdc-button__ripple"></span>
+                    <span class="mdc-button__label">ENABLE WEBCAM</span>
+                  </button>
             </div>
             <div id="slabAttract" x-show="!getIngame()">
                 <button @click="startGame" id="startGameButton">Start Game</button>
@@ -242,7 +448,7 @@
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('d', () => (Object.assign({
-                styles: {'--columnBottom':'5dvh', '--columnTop':'5dvh'},
+                styles: { '--columnBottom': '5dvh', '--columnTop': '5dvh' },
                 columnHeight: 0.5,
                 ingame: true,
 
@@ -257,10 +463,10 @@
                 getBodyStyles() {
                     // Map columnHeight to display values
                     return {
-                        '--columnScale': (0.67*this.columnHeight + 0.33),
+                        '--columnScale': (0.67 * this.columnHeight + 0.33),
                         //'--columnHue': ((1-this.columnHeight)*100) + "deg",
                         '--columnHue': '0deg',
-                        '--columnHueIntensity': 1-((this.columnHeight-0.5)*2)
+                        '--columnHueIntensity': 1 - ((this.columnHeight - 0.5) * 2)
                     }
                 },
 
