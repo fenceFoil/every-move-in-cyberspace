@@ -14,12 +14,20 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital@0;1&family=Public+Sans&display=swap');
 
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
         /* alpinejs */
         [x-cloak] { display: none !important; }
 
         body {
             height: 100%;
             overflow: hidden;
+
+            --columnBottom: 5dvh;
+            --columnTop: 5dvh;
+
+            --columnScale: 1;
+            --columnHueIntensity: 0.5;
         }
         
         #app {
@@ -36,14 +44,21 @@
         }
 
         .majestic-column {
-            background-size: contain;
+            background-size: cover;
+            background-repeat: no-repeat;
             background-image: url(media/stone-column.png);        
             z-index: 10;
             position: absolute;
             left: 5dvw;
+            transform: scaleY(var(--columnScale));
+            transform-origin: center bottom;
+            /*top: var(--columnTop);
+            bottom: var(--columnBottom);*/
             top: 5dvh;
             bottom: 5dvh;
             width: 10dvw;
+            filter: contrast(1.2);
+            transition: transform 100ms linear;
         }
 
         .majestic-column-right {
@@ -51,15 +66,19 @@
             left: 85dvw;
         }
 
-        #mirror-of-player {
+        .majestic-column::after {
             position: absolute;
-            top: 10dvh;
-            background: url(media/pexels-madison-inouye-1101122.jpg);
+            top: 0; bottom: 0; left: 0; right: 0;
+            content: " ";
+            opacity: 0.8;
+            filter: hue-rotate(var(--columnHue));
+            transition: filter 100ms linear;
+            transition: opacity 100ms linear;
+            opacity: var(--columnHueIntensity);
+            mix-blend-mode: multiply;
+            background-image: url(media/stone-column-shadow.png);
             background-size: cover;
-            background-position: center;
-            z-index: 10;
-            width: 50dvw;
-            aspect-ratio: 16/9;
+            background-repeat: no-repeat;
         }
 
         .cyberspaceBG {
@@ -81,8 +100,46 @@
             z-index: 3;
         }
 
-        #musicSeekBar {
+        #score {
+            font-family: "Press Start 2P";
+            position: absolute;
+            top: 2dvh;
+            font-size: 1.5em;
+            filter: blur(2px);
+            font-style: italic;
+        }
 
+        #slab {
+            position: absolute;
+            top: 10dvh;
+            background: url(media/pexels-madison-inouye-1101122.jpg);
+            background-size: cover;
+            background-position: center;
+            z-index: 10;
+            width: 50dvw;
+            aspect-ratio: 16/9;
+        }
+
+        #playerHead {
+            background-image: url(media/bust-small.png);
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+
+            position: absolute;
+            width: 12dvw;
+            aspect-ratio: 1;
+        }
+
+        .playerSphere {
+            background-image: url(media/amigaBoingBall.png);
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+
+            position: absolute;
+            width: 12dvw;
+            aspect-ratio: 1;
         }
 
     </style>
@@ -95,8 +152,16 @@
 <body>
     <script src="//unpkg.com/alpinejs" defer></script>
     <script src="chance.min.js"></script>
-    <div id="app" x-data="d">
-        <div id="mirror-of-player">
+    <div id="app" x-data="d" :style="getBodyStyles()">
+        <div id="score">
+            Don't Copy The Moves Dude
+        </div>
+        <div id="slab">
+            asdf
+            <div id="playerHead">
+
+            </div>
+            #playerLandmarks
         </div>
         <div class="majestic-column"></div>
         <div class="majestic-column majestic-column-right"></div>
@@ -108,8 +173,27 @@
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('d', () => (Object.assign({
-                async init() {
+                styles: {'--columnBottom':'5dvh', '--columnTop':'5dvh'},
+                columnHeight: 0.5,
+
+                getBodyStyles() {
+                    // Map columnHeight to display values
+                    return {
+                        '--columnScale': (0.67*this.columnHeight + 0.33),
+                        //'--columnHue': ((1-this.columnHeight)*100) + "deg",
+                        '--columnHue': '0deg',
+                        '--columnHueIntensity': (this.columnHeight-0.5)*2
+                    }
                 },
+
+                async init() {
+
+                    setInterval(() => {
+                        this.columnHeight = Math.random()
+                    }, 200);
+                },
+
+
             }, {})))
         });
     </script>
