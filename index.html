@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="black" />
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="normalize.css">
+    <title>Election Election</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital@0;1&family=Public+Sans&display=swap');
+
+        /* alpinejs */
+        [x-cloak] { display: none !important; }
+
+        body {
+            height: 100%;
+        }
+        
+        #app {
+            background-color: antiquewhite;
+            background-size: cover;
+            color: navy;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 2em);
+            padding: 1em;
+            font-family: 'Merriweather', serif;
+            font-size:3em;
+        }
+
+        .timer {
+            color: maroon;
+            font-size: 4em;
+            text-align: center;
+        }
+
+        button {
+            background-color: navy;
+            border-color: maroon solid 0.2em;
+            color: antiquewhite;
+            margin-bottom: 1em;
+        }
+
+        .voted {
+
+        }
+
+        .starChip {
+            aspect-ratio: 1;
+            display: grid;
+            place-items: center;
+            background-color: maroon;
+            background-image: url(media/small-star-navy.png);
+            background-position: 0 -0.05em;
+            background-size: cover;
+            background-repeat: no-repeat;
+            border-radius: 50%;
+            font-size: 2em;
+            padding: 0em;
+            color: antiquewhite;
+            /*font-family: 'Public Sans', sans-serif;*/
+            /*font-family: "Lucidia Console";*/
+            font-weight: bold;
+            border-width: 0.1em;
+            border-color: maroon;
+            border-style: solid;
+            /*font-feature-settings: 'tnum';
+            font-variant-numeric: tabular-nums;*/
+ 
+            transform: translateX(calc((100svw - 2em - 8rem) * var(--starPos)));
+            transition: transform 1s;
+            
+        }
+
+        .rotate {
+            animation: rotating 2s ease-in-out infinite;
+        }
+
+        @keyframes rotating {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .disabled {
+            background-color: maroon;
+            transition: filter 1s;
+        }
+
+        .regalFilter {
+            filter: invert() hue-rotate(-50deg);
+            padding-bottom: 0.25em;
+        }
+
+        
+    </style>
+
+    <script>
+
+    </script>
+</head>
+
+<body>
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <script src="chance.min.js"></script>
+    <script src="anime.min.js"></script>
+    <div id="app" x-data="d">
+        <div class="timer" x-show="electionRunning" x-text="`:${electionSecondsLeft}`">:49</div>  
+        <div class="starChip rotate" x-show="!electionRunning || (votingLimited && voted)"></div>
+
+        <button x-show="electionRunning && (!votingLimited || !voted)" class="electionButton" :class="{disabled: !electionRunning}" @click="voteElection()">Vote for <br>Elections!</button>
+        <button x-show="electionRunning && (!votingLimited || !voted)" class="electionButton" :class="{disabled: !electionRunning}" @click="voteNoElection()">Vote for <br>No Elections!</button>
+    </div>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('d', () => (Object.assign({
+                //newword: '',
+                //username: localStorage.getItem('username')?localStorage.getItem('username'):`Tornado${Math.floor(Math.random()*100000)}`,
+                electionSecondsLeft: 49,
+                electionEndTime: Date.now(),
+                electionRunning: false,
+                electionsCount: 7,
+                noElectionsCount: 25,
+                currentElectionId: null,
+                votingLimited: true,
+                voted: false,
+
+                async voteElection() {
+                    this.doCastVote('voteElection')
+                },
+
+                async voteNoElection() {
+                    this.doCastVote('voteNoElection')
+                },
+
+                async doCastVote(choice) {
+                    let alreadyVoted = localStorage.getItem(this.currentElectionId) != null;
+                    if (!alreadyVoted || !this.votingLimited) {
+                        let voted = (await (await fetch(choice, {method:'POST'})).json());
+                        localStorage.setItem(this.currentElectionId, choice);
+                    }
+                },
+
+                async init() {
+                    //localStorage.setItem('username', this.username); // initial value
+                    let alp = this;
+
+                    setInterval(async () => {
+                        let electionStatus = await (await fetch("electionStatus")).json();
+                        this.electionEndTime = Date.parse(electionStatus.currElectionEndTime);
+                        this.electionsCount = electionStatus.results.elections;
+                        this.noElectionsCount = electionStatus.results.noElections;
+                        this.electionRunning = electionStatus.running;
+                        this.currentElectionId = electionStatus.currElectionId;
+                        this.votingLimited = electionStatus.votingLimited;
+                    }, 1000);
+
+                    setInterval(() => {
+                        this.electionSecondsLeft = Math.ceil(Math.max(0, -(Date.now() - this.electionEndTime)/1000));
+                        //this.electionRunning = (this.electionSecondsLeft > 0);
+
+                        this.voted = localStorage.getItem(this.currentElectionId) != null;
+                    }, 100)
+
+                    this.$watch('username', v => {
+                        //localStorage.setItem('username', v);
+                    })
+                },
+            }, {})))
+        });
+    </script>
+</body>
+
+</html>
