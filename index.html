@@ -486,13 +486,13 @@
         </div>
     </div>
     <script>
-        var totalScore = 200;
-        var frameScore = 3;
+        var totalScore = 200.2342342342;
+        var frameScore = 5;
 
         document.addEventListener('alpine:init', () => {
             Alpine.data('d', () => (Object.assign({
                 styles: { '--columnBottom': '5dvh', '--columnTop': '5dvh' },
-                columnHeight: 0.5,
+                columnHeight: 0,
                 ingame: true,
                 progress: 0.2,
                 frameScore: 0,
@@ -531,12 +531,16 @@
                 getBodyStyles() {
                     // Map columnHeight to display values
                     this.columnHeight = Math.min(5, Math.max(0, this.frameScore/5));
+                    let hueIntensity = 0;
+                    if (this.columnHeight > 0.5) {
+                        hueIntensity = ((this.columnHeight-0.5)*2);
+                    }
 
                     return {
                         '--columnScale': (0.67 * this.columnHeight + 0.33),
                         //'--columnHue': ((1-this.columnHeight)*100) + "deg",
                         '--columnHue': '0deg',
-                        '--columnHueIntensity': 1 - ((this.columnHeight - 0.5) * 2)
+                        '--columnHueIntensity': hueIntensity//1 - ((this.columnHeight - 0.5) * 2)
                     }
                 },
 
