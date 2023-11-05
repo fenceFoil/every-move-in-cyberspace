@@ -304,6 +304,8 @@
             console.log("audio ended");
             pastDetections = savedDetections;
             savedDetections = [];
+            frameScore = 0;
+            totalScore = 0;
             audio.currentTime = 0;
             audio.play();
         });
@@ -436,7 +438,7 @@
 
                     // Score 
                     frameScore = calculateScore(poseLandmarkerResult, closestDetection.pose);
-                    console.log("frameScore", frameScore);
+                    // console.log("frameScore", frameScore);
                     totalScore = totalScore + frameScore;
 
 
