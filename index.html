@@ -16,6 +16,11 @@
 
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+        @font-face {
+            font-family: "VCR";
+            src: url("media/VCR_OSD_MONO_1.001.ttf") format("truetype");
+        }
+
         /* alpinejs */
         [x-cloak] { display: none !important; }
 
@@ -100,13 +105,27 @@
             z-index: 3;
         }
 
-        #score {
-            font-family: "Press Start 2P";
+        #gametitle {
+            /*font-family: "Press Start 2P";*/
+            font-family: "VCR";
             position: absolute;
             top: 2dvh;
             font-size: 1.5em;
-            filter: blur(2px);
+            /*filter: blur(2px);*/
             font-style: italic;
+        }
+
+        #score {
+            /*font-family: "Press Start 2P";*/
+            font-family: "VCR";
+            position: absolute;
+            text-align: center;
+            color: cyan;
+            top: 76dvh;
+            font-size: 4em;
+            filter: blur(2px);
+            z-index: 100;
+            text-shadow: -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 4px 4px 0 #000;   
         }
 
         #slab {
@@ -120,26 +139,63 @@
             aspect-ratio: 16/9;
         }
 
-        #playerHead {
-            background-image: url(media/bust-small.png);
-            background-position: center;
-            background-size: contain;
-            background-repeat: no-repeat;
-
-            position: absolute;
-            width: 12dvw;
-            aspect-ratio: 1;
+        #slab .title-bar {
         }
 
-        .playerSphere {
-            background-image: url(media/amigaBoingBall.png);
+        #playerHead {
+            background-image: url(media/bust-small.png);
+            --sphere-width: 8dvw;
+        }
+
+        .playerLandmark {
             background-position: center;
             background-size: contain;
             background-repeat: no-repeat;
 
             position: absolute;
-            width: 12dvw;
+            width: var(--sphere-width);
             aspect-ratio: 1;
+            --sphere-y: 0;
+            --sphere-x: 0.75;
+            --sphere-hue: 0deg;
+            top: calc((100% - var(--sphere-width)) * var(--sphere-y));
+            left: calc((100% - var(--sphere-width)) * var(--sphere-x));
+            filter: hue-rotate(var(--sphere-hue));
+            --sphere-width: 3dvw;
+        }
+
+        #songPositionBar {
+            font-family: "Press Start 2P";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 8%;
+            font-size: 3em;
+            color: lime;
+            text-align: center;   
+            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;   
+        }
+
+        #ghostHead {
+            background-image: url(media/jackson.jpg);
+            border-radius: 30%;
+            --sphere-width: 8dvw;
+
+            --sphere-x: 0.2;
+            --sphere-y: 0.6;
+        }
+
+        .sphereLandmark {
+            background-image: url(media/amigaBoingBall.png);
+        }
+
+        #slabAttract {
+            height: 100%;
+            display: grid;
+            place-items: center;
+        }
+        #startGameButton {
+            transform: scale(8);
         }
 
     </style>
@@ -153,15 +209,28 @@
     <script src="//unpkg.com/alpinejs" defer></script>
     <script src="chance.min.js"></script>
     <div id="app" x-data="d" :style="getBodyStyles()">
-        <div id="score">
+        <div id="gametitle">
             Don't Copy The Moves Dude
         </div>
-        <div id="slab">
-            asdf
-            <div id="playerHead">
-
+        <div id="score">878</div>
+        <div id="slab" class="window">
+            <div class="title-bar">
+                <div class="title-bar-text">The Moves</div>
+                <div class="title-bar-controls">
+                    <button aria-label="Minimize"></button>
+                    <button aria-label="Maximize"></button>
+                    <button aria-label="Close"></button>
+                  </div>
             </div>
-            #playerLandmarks
+            <div id="slabAttract" x-show="!getIngame()">
+                <button @click="startGame" id="startGameButton">Start Game</button>
+            </div>
+            <div id="slabIngame" x-show="getIngame()">
+                <div id="playerHead" class="playerLandmark"></div>
+                <div class="playerLandmark sphereLandmark" style="--sphere-x: 0.6;--sphere-y:0.8"></div>
+                <div id="ghostHead" class="playerLandmark"></div>
+                <div id="songPositionBar">||---------</div>
+            </div>
         </div>
         <div class="majestic-column"></div>
         <div class="majestic-column majestic-column-right"></div>
@@ -175,6 +244,15 @@
             Alpine.data('d', () => (Object.assign({
                 styles: {'--columnBottom':'5dvh', '--columnTop':'5dvh'},
                 columnHeight: 0.5,
+                ingame: true,
+
+                getIngame() {
+                    return this.ingame;
+                },
+
+                startGame() {
+                    this.ingame = true;
+                },
 
                 getBodyStyles() {
                     // Map columnHeight to display values
@@ -182,7 +260,7 @@
                         '--columnScale': (0.67*this.columnHeight + 0.33),
                         //'--columnHue': ((1-this.columnHeight)*100) + "deg",
                         '--columnHue': '0deg',
-                        '--columnHueIntensity': (this.columnHeight-0.5)*2
+                        '--columnHueIntensity': 1-((this.columnHeight-0.5)*2)
                     }
                 },
 
@@ -192,7 +270,6 @@
                         this.columnHeight = Math.random()
                     }, 200);
                 },
-
 
             }, {})))
         });
