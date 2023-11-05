@@ -94,6 +94,21 @@
             background-repeat: no-repeat;
         }
 
+        .fbiwarning {
+            background-image: url(media/fbiwarning.jpg);
+            background-size: cover;
+            background-repeat: no-repeat;
+            width: 10dvh;
+            aspect-ratio: 1.3;
+            position: absolute;
+            bottom: 5dvh; 
+            left: 0;
+        }
+
+        .fbiwarning-right {
+
+        }
+
         .cyberspaceBG {
             transform: scale3d(1, 1, 1) rotateX(54deg) rotateY(0deg) rotateZ(0deg) translate3d(0px, 0px, -100px) skew(0deg, 0deg);
             background-image: url(media/pinkgrid.png);
@@ -170,6 +185,7 @@
             left: calc((100% - var(--sphere-width)) * var(--sphere-x));
             filter: hue-rotate(var(--sphere-hue));
             --sphere-width: 3dvw;
+            z-index: 150;
         }
 
         #songPositionBar {
@@ -186,11 +202,13 @@
 
         #ghostHead {
             background-image: url(media/jackson.jpg);
+            opacity: 0.3;
             border-radius: 30%;
             --sphere-width: 8dvw;
 
             --sphere-x: 0.2;
             --sphere-y: 0.6;
+            z-index: 100;
         }
 
         .sphereLandmark {
@@ -408,7 +426,8 @@
     <script src="/combined.js"></script>
     <div id="app" x-data="d" :style="getBodyStyles()">
         <div id="gametitle">
-            Don't Copy The Moves Dude
+            <!--Don't Copy The Moves Dude-->
+            You Wouldn't Copy A Move
         </div>
         <div id="score">878</div>
         <div id="slab" class="window">
@@ -432,14 +451,24 @@
                 <button @click="startGame" id="startGameButton">Start Game</button>
             </div>
             <div id="slabIngame" x-show="getIngame()">
-                <div id="playerHead" class="playerLandmark"></div>
-                <div class="playerLandmark sphereLandmark" style="--sphere-x: 0.6;--sphere-y:0.8"></div>
-                <div id="ghostHead" class="playerLandmark"></div>
+                <!--
+                <div id="playerHead" class="playerLandmark" :style="{'--sphere-x':currentLandmarks.head.x, '--sphere-y': currentLandmarks.head.y}"></div>
+                <div id="leftShoulder" class="playerLandmark sphereLandmark" :style="{'--sphere-x':currentLandmarks.leftShoulder.x, '--sphere-y': currentLandmarks.leftShoulder.y, '--sphere-hue':'240deg'}"></div>
+                <div id="rightShoulder" class="playerLandmark sphereLandmark" :style="{'--sphere-x':currentLandmarks.rightShoulder.x, '--sphere-y': currentLandmarks.rightShoulder.y, '--sphere-hue':'240deg'}"></div>
+                <div id="leftElbow" class="playerLandmark sphereLandmark" :style="{'--sphere-x':currentLandmarks.leftElbow.x, '--sphere-y': currentLandmarks.leftElbow.y, '--sphere-hue':'120deg'}"></div>
+                <div id="rightElbow" class="playerLandmark sphereLandmark" :style="{'--sphere-x':currentLandmarks.rightElbow.x, '--sphere-y': currentLandmarks.rightElbow.y, '--sphere-hue':'120deg'}"></div>
+                <div id="leftWrist" class="playerLandmark sphereLandmark" :style="{'--sphere-x':currentLandmarks.leftWrist.x, '--sphere-y': currentLandmarks.leftWrist.y}"></div>
+                <div id="rightWrist" class="playerLandmark sphereLandmark" :style="{'--sphere-x':currentLandmarks.rightWrist.x, '--sphere-y': currentLandmarks.rightWrist.y}"></div>
+
+                
+                <div id="ghostHead" class="playerLandmark"></div>-->
                 <div id="songPositionBar">||---------</div>
             </div>
         </div>
         <div class="majestic-column"></div>
+        <div class="fbiwarning"></div>
         <div class="majestic-column majestic-column-right"></div>
+        <div class="fbiwarning fbiwarning-right"></div>
         <div id="musicSeekBar">asdf</div>
         <div class="cyberspaceBG-wrap">
             <div class="cyberspaceBG"> </div>
@@ -451,6 +480,16 @@
                 styles: { '--columnBottom': '5dvh', '--columnTop': '5dvh' },
                 columnHeight: 0.5,
                 ingame: true,
+
+                currentLandmarks: {
+                    head: {x: 0.5, y: 0.15},
+                    leftShoulder: {x: 0.4, y: 0.4},
+                    rightShoulder: {x: 0.6, y: 0.4},
+                    leftElbow: {x: 0.35, y: 0.5},
+                    rightElbow: {x: 0.65, y: 0.5},
+                    leftWrist: {x: 0.2, y: 0.6},
+                    rightWrist: {x: 0.8, y: 0.6}
+                },
 
                 getIngame() {
                     return this.ingame;
