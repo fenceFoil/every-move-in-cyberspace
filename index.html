@@ -440,7 +440,7 @@
         <audio id="bgMusic" preload="auto" autobuffer="" autoplay controls @timeupdate="updateProgress">
             <source src="media/floralshoppe-49sish.mp3">
         </audio>
-        <div id="score">878</div>
+        <div id="score" x-text="totalScore"></div>
         <div id="slab" class="window">
             <div class="title-bar">
                 <div class="title-bar-text">The Moves</div>
@@ -486,6 +486,9 @@
         </div>
     </div>
     <script>
+        var totalScore = 0;
+        var frameScore = 0;
+
         document.addEventListener('alpine:init', () => {
             Alpine.data('d', () => (Object.assign({
                 styles: { '--columnBottom': '5dvh', '--columnTop': '5dvh' },
@@ -534,9 +537,11 @@
                 },
 
                 async init() {
-
+                    alpineObject = this;
                     setInterval(() => {
                         this.columnHeight = Math.random()
+                        this.frameScore = frameScore;
+                        this.totalScore = totalScore;
                     }, 280);
                 },
 
