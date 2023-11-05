@@ -101,13 +101,11 @@
             width: 10dvh;
             aspect-ratio: 1.3;
             position: absolute;
-            bottom: 5dvh; 
+            bottom: 5dvh;
             left: 0;
         }
 
-        .fbiwarning-right {
-
-        }
+        .fbiwarning-right {}
 
         .cyberspaceBG {
             transform: scale3d(1, 1, 1) rotateX(54deg) rotateY(0deg) rotateZ(0deg) translate3d(0px, 0px, -100px) skew(0deg, 0deg);
@@ -226,9 +224,9 @@
         }
 
         #webcam {
-           width: 100%;
-           height: 100%;
-           position: absolute;
+            width: 100%;
+            height: 100%;
+            position: absolute;
         }
 
         #webcamButton {
@@ -297,6 +295,45 @@
         const canvasElement = document.getElementById("output_canvas");
         const canvasCtx = canvasElement.getContext("2d");
         const drawingUtils = new DrawingUtils(canvasCtx);
+        const audio = document.getElementById('bgMusic')
+        var faceChildren = [];
+        var savedDetections = [];
+        var pastDetections = [];
+
+        audio.addEventListener('ended', function () {
+            console.log("audio ended");
+            pastDetections = savedDetections;
+            savedDetections = [];
+            audio.currentTime = 0;
+            audio.play();
+        });
+
+        const calculateScore = (currentPose, relevantPose) => {
+            if (!currentPose || !relevantPose) {
+            return 0;
+            }
+            let frameScore = 0;
+            const currentLandmark = currentPose.landmarks ? currentPose.landmarks[0] : undefined;
+            const relevantLandmark = relevantPose.landmarks ? relevantPose.landmarks[0] : undefined;
+            if (!currentLandmark || !relevantLandmark) {
+            return 0;
+            }
+            for(let i = 0; i < currentLandmark.length; i++) {
+            // Ignore landmarks where either x or y for either the current or relevant landmark is not within the bounds of 0 to 1
+            if(currentLandmark[i].x < 0 || currentLandmark[i].x > 1 || currentLandmark[i].y < 0 || currentLandmark[i].y > 1 ||
+                relevantLandmark[i].x < 0 || relevantLandmark[i].x > 1 || relevantLandmark[i].y < 0 || relevantLandmark[i].y > 1) {
+                continue;
+            }
+            const dx = Math.pow(currentLandmark[i].x - relevantLandmark[i].x, 2);
+            const dy = Math.pow(currentLandmark[i].y - relevantLandmark[i].y, 2);
+            if(!isNaN(dx) && !isNaN(dy)) {
+                const distance = Math.sqrt(dx + dy);
+                frameScore += isNaN(distance) ? 0 : distance;
+            }
+            }
+            return frameScore;
+        }
+        
 
         const hasGetUserMedia = () => !!navigator.mediaDevices && !!navigator.mediaDevices.getUserMedia;
 
@@ -308,9 +345,13 @@
         }
 
         function enableCam(event) {
+            enableWebcamButton.style.display = "none";
+
+            audio.play();
             canvasElement.style.display = "block";
+
             if (!poseLandmarker) {
-                console.log("Wait! tors not loaded yet.");
+                console.log("Wait! pose stuff not loaded yet.");
                 return;
             }
 
@@ -332,72 +373,6 @@
             });
         }
 
-
-        var faceChildren = [];
-        function displayFaceVideoDetections(detections) {
-            // Remove any highlighting from previous frame.
-
-            for (let child of faceChildren) {
-                liveView.removeChild(child);
-            }
-            faceChildren.splice(0);
-
-            // Iterate through predictions and draw them to the live view
-            for (let detection of detections) {
-                const p = document.createElement("p");
-                p.innerText =
-                    "Confidence: " +
-                    Math.round(parseFloat(detection.categories[0].score) * 100) +
-                    "% .";
-                p.style =
-                    "left: " +
-                    (video.offsetWidth -
-                        detection.boundingBox.width -
-                        detection.boundingBox.originX) +
-                    "px;" +
-                    "top: " +
-                    (detection.boundingBox.originY - 30) +
-                    "px; " +
-                    "width: " +
-                    (detection.boundingBox.width - 10) +
-                    "px;";
-
-                const highlighter = document.createElement("div");
-                highlighter.setAttribute("class", "highlighter");
-                highlighter.style =
-                    "left: " +
-                    (video.offsetWidth -
-                        detection.boundingBox.width -
-                        detection.boundingBox.originX) +
-                    "px;" +
-                    "top: " +
-                    detection.boundingBox.originY +
-                    "px;" +
-                    "width: " +
-                    (detection.boundingBox.width - 10) +
-                    "px;" +
-                    "height: " +
-                    detection.boundingBox.height +
-                    "px;";
-
-                liveView.appendChild(highlighter);
-                liveView.appendChild(p);
-
-                // Store drawn objects in memory so they are queued to delete at next call
-                faceChildren.push(highlighter);
-                faceChildren.push(p);
-                for (let keypoint of detection.keypoints) {
-                    const keypointEl = document.createElement("spam");
-                    keypointEl.className = "key-point";
-                    keypointEl.style.top = `${keypoint.y * video.offsetHeight - 3}px`;
-                    keypointEl.style.left = `${video.offsetWidth - keypoint.x * video.offsetWidth - 3
-                        }px`;
-                    liveView.appendChild(keypointEl);
-                    faceChildren.push(keypointEl);
-                }
-            }
-        }
-
         let lastVideoTime = -1;
         async function predictWebcam() {
             canvasElement.style.height = "100%";
@@ -410,13 +385,64 @@
                 const poseLandmarkerResult = poseLandmarker.detectForVideo(video, startTimeMs);
                 canvasCtx.save();
                 canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                savedDetections.push({
+                    time: audio.currentTime,
+                    pose: poseLandmarkerResult
+                });
+
 
                 for (const landmark of poseLandmarkerResult.landmarks) {
-                    drawingUtils.drawLandmarks(landmark, {
-                        radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+                    // drawingUtils.drawLandmarks(landmark, {
+                    //     radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1),
+                    //     color: 'red',
+                    //     lineWidth: 2,
+                    //     radius: 4
+                    // });
+                    drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, {
+                        color: 'red',
+                        lineWidth: 2,
+                        radius: 4
                     });
-                    drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
                 }
+
+                if (pastDetections && pastDetections.length > 0) {
+                    let minDiff = Infinity;
+                    let closestDetection;
+                    for (let i = 0; i < pastDetections.length; i++) {
+                        let diff = Math.abs(pastDetections[i].time - audio.currentTime);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            closestDetection = pastDetections[i];
+                        }
+                    }
+
+                    console.log("closestDetection", closestDetection)
+
+                    if (closestDetection && closestDetection.pose) {
+                        for (const landmark of closestDetection.pose.landmarks) {
+                            // drawingUtils.drawLandmarks(landmark, {
+                            //     radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1),
+                            //     color: 'lime',
+                            //     lineWidth: 2,
+                            //     radius: 4
+                            // });
+                            drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, {
+                                color: 'lime',
+                                lineWidth: 2,
+                                radius: 4
+                            });
+                        }
+                    }
+
+                    // Score 
+                    frameScore = calculateScore(poseLandmarkerResult, closestDetection.pose);
+                    console.log("frameScore", frameScore);
+                    totalScore = totalScore + frameScore;
+
+
+
+                }
+
 
                 canvasCtx.restore();
             }
@@ -431,7 +457,6 @@
 
 <body>
     <script src="//unpkg.com/alpinejs" defer></script>
-    <script src="/combined.js"></script>
     <div id="app" x-data="d" :style="getBodyStyles()">
         <div id="gametitle">
             <!--Don't Copy The Moves Dude-->
@@ -454,9 +479,12 @@
                 ENABLE WEBCAM
             </button>
             <div id="demos">
-                <video id="webcam" autoplay playsinline></video>
+                <video id="webcam" autoplay playsinline style="display:none"></video>
                 <canvas id="output_canvas" style="position:absolute;top:0;left:0;display:none"></canvas>
-
+                <!-- <button id="webcamButton" class="mdc-button mdc-button--raised">
+                    <span class="mdc-button__ripple"></span>
+                    <span class="mdc-button__label">ENABLE WEBCAM</span>
+                  </button> -->
             </div>
             <div id="slabAttract" x-show="!getIngame()">
                 <button @click="startGame" id="startGameButton">Start Game</button>
@@ -486,7 +514,7 @@
         </div>
     </div>
     <script>
-        var totalScore = 200;
+        var totalScore = 0;
         var frameScore = 3;
 
         document.addEventListener('alpine:init', () => {
@@ -495,25 +523,30 @@
                 columnHeight: 0.5,
                 ingame: true,
                 progress: 0.2,
+                score: 0,
                 frameScore: 0,
                 totalScore: 0,
 
                 currentLandmarks: {
-                    head: {x: 0.5, y: 0.15},
-                    leftShoulder: {x: 0.4, y: 0.4},
-                    rightShoulder: {x: 0.6, y: 0.4},
-                    leftElbow: {x: 0.35, y: 0.5},
-                    rightElbow: {x: 0.65, y: 0.5},
-                    leftWrist: {x: 0.2, y: 0.6},
-                    rightWrist: {x: 0.8, y: 0.6}
+                    head: { x: 0.5, y: 0.15 },
+                    leftShoulder: { x: 0.4, y: 0.4 },
+                    rightShoulder: { x: 0.6, y: 0.4 },
+                    leftElbow: { x: 0.35, y: 0.5 },
+                    rightElbow: { x: 0.65, y: 0.5 },
+                    leftWrist: { x: 0.2, y: 0.6 },
+                    rightWrist: { x: 0.8, y: 0.6 }
                 },
 
                 musicProgressText() {
-                    let blankBar  = '------------';
+                    let blankBar = '------------';
                     let filledBar = '||||||||||||';
                     let numBars = Math.floor(this.progress * blankBar.length);
 
-                    return filledBar.substring(0,numBars) + blankBar.substring(numBars);
+                    return filledBar.substring(0, numBars) + blankBar.substring(numBars);
+                },
+
+                addToScore(x) {
+                    this.score += x;
                 },
 
                 updateProgress() {
