@@ -243,6 +243,14 @@
             width: 640px;
             height: 360px;
         }
+
+        #bgMusic {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0.2;
+            z-index: 10000;
+        }
     </style>
 
     <script type="module">
@@ -429,7 +437,7 @@
             <!--Don't Copy The Moves Dude-->
             You Wouldn't Copy A Move
         </div>
-        <audio id="bgMusic" preload="auto" autobuffer="">
+        <audio id="bgMusic" preload="auto" autobuffer="" autoplay controls @timeupdate="updateProgress">
             <source src="media/floralshoppe-49sish.mp3">
         </audio>
         <div id="score">878</div>
@@ -465,7 +473,7 @@
 
                 
                 <div id="ghostHead" class="playerLandmark"></div>-->
-                <div id="songPositionBar">||---------</div>
+                <div id="songPositionBar" x-text="musicProgressText()"></div>
             </div>
         </div>
         <div class="majestic-column"></div>
@@ -483,6 +491,7 @@
                 styles: { '--columnBottom': '5dvh', '--columnTop': '5dvh' },
                 columnHeight: 0.5,
                 ingame: true,
+                progress: 0.2,
 
                 currentLandmarks: {
                     head: {x: 0.5, y: 0.15},
@@ -492,6 +501,18 @@
                     rightElbow: {x: 0.65, y: 0.5},
                     leftWrist: {x: 0.2, y: 0.6},
                     rightWrist: {x: 0.8, y: 0.6}
+                },
+
+                musicProgressText() {
+                    let blankBar  = '------------';
+                    let filledBar = '||||||||||||';
+                    let numBars = Math.floor(this.progress * blankBar.length);
+
+                    return filledBar.substring(0,numBars) + blankBar.substring(numBars);
+                },
+
+                updateProgress() {
+                    this.progress = this.$event.target.currentTime / this.$event.target.duration;
                 },
 
                 getIngame() {
@@ -516,7 +537,7 @@
 
                     setInterval(() => {
                         this.columnHeight = Math.random()
-                    }, 200);
+                    }, 280);
                 },
 
             }, {})))
