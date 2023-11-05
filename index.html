@@ -495,6 +495,8 @@
                 columnHeight: 0.5,
                 ingame: true,
                 progress: 0.2,
+                frameScore: 0,
+                totalScore: 0,
 
                 currentLandmarks: {
                     head: {x: 0.5, y: 0.15},
@@ -544,7 +546,7 @@
                     setInterval(() => {
                         this.frameScore = frameScore;
                         this.totalScore = totalScore;
-                    }, 50)
+                    }, 50);
                 },
 
             }, {})))
