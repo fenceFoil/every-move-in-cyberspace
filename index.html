@@ -31,13 +31,18 @@
             padding: 1em;
             font-family: 'Merriweather', serif;
             font-size:3em;
+            z-index: 5;
         }
 
-        pre{
-            z-index: 2;
-            background-color: black;
-            padding: 0.2em;
-            color: lime;
+        #mirror-of-player {
+            position: absolute;
+            top: 10dvh;
+            background: url(media/pexels-madison-inouye-1101122.jpg);
+            background-size: cover;
+            background-position: center;
+            z-index: 10;
+            width: 50dvw;
+            aspect-ratio: 16/9;
         }
 
         .cyberspaceBG {
@@ -56,6 +61,7 @@
             right: 0;
             perspective: 30dvh;
             perspective-origin: 50% 50%;
+            z-index: 3;
         }
 
     </style>
@@ -69,7 +75,8 @@
     <script src="//unpkg.com/alpinejs" defer></script>
     <script src="chance.min.js"></script>
     <div id="app" x-data="d">
-        <pre>G   A   M   E</pre>
+        <div id="mirror-of-player">
+        </div>
         <div class="cyberspaceBG-wrap">
             <div class="cyberspaceBG"> </div>
         </div>
