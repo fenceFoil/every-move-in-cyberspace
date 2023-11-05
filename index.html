@@ -486,8 +486,8 @@
         </div>
     </div>
     <script>
-        var totalScore = 0;
-        var frameScore = 0;
+        var totalScore = 200;
+        var frameScore = 3;
 
         document.addEventListener('alpine:init', () => {
             Alpine.data('d', () => (Object.assign({
@@ -530,6 +530,8 @@
 
                 getBodyStyles() {
                     // Map columnHeight to display values
+                    this.columnHeight = Math.min(5, Math.max(0, this.frameScore/5));
+
                     return {
                         '--columnScale': (0.67 * this.columnHeight + 0.33),
                         //'--columnHue': ((1-this.columnHeight)*100) + "deg",
@@ -540,9 +542,9 @@
 
                 async init() {
                     alpineObject = this;
-                    setInterval(() => {
+                    /*setInterval(() => {
                         this.columnHeight = Math.random()
-                    }, 280);
+                    }, 280);*/
                     setInterval(() => {
                         this.frameScore = frameScore;
                         this.totalScore = totalScore;
