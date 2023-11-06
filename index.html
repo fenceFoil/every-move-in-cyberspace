@@ -375,6 +375,137 @@
             });
         }
 
+
+function analyzePose(landmarks) {
+    console.log("analyzePose, landmarks", landmarks)
+    if (landmarks?.length !== 33) {
+        console.log("analyzePose, landmarks.length !== 33", landmarks?.length)
+        return;
+    }
+    const head_horizontal_direction = getHeadHorizontalDirection(landmarks[0], landmarks[7], landmarks[8]);
+    const head_vertical_direction = getHeadVerticalDirection(landmarks[0], landmarks[7], landmarks[8]);
+    const touching_left_shoulder_with_hand = arePointsClose(landmarks[11], [landmarks[15], landmarks[17], landmarks[19], landmarks[21], landmarks[16], landmarks[18], landmarks[20], landmarks[22] ], "touching_left_shoulder_with_hand");
+    const touching_right_shoulder_with_hand = arePointsClose(landmarks[12], [landmarks[15], landmarks[17], landmarks[19], landmarks[21], landmarks[16], landmarks[18], landmarks[20], landmarks[22]], "touching_right_shoulder_with_hand");
+    const touching_left_elbow_with_hand = arePointsClose(landmarks[13], [landmarks[15], landmarks[17], landmarks[19], landmarks[21], landmarks[16], landmarks[18], landmarks[20], landmarks[22]], "touching_left_elbow_with_hand");
+    const touching_right_elbow_with_hand = arePointsClose(landmarks[14], [landmarks[15], landmarks[17], landmarks[19], landmarks[21], landmarks[16], landmarks[18], landmarks[20], landmarks[22]], "touching_right_elbow_with_hand");
+    const torso_rotation = getTorsoRotation(landmarks[11], landmarks[12]);
+    const left_arm_elevation = getArmElevation(landmarks[11], landmarks[13]);
+    const right_arm_elevation = getArmElevation(landmarks[12], landmarks[14]);
+    const elbow_to_left_hand_direction = getLimbDirection(landmarks[13], landmarks[15]);
+    const elbow_to_right_hand_direction = getLimbDirection(landmarks[14], landmarks[16]);
+
+    return {
+        head_horizontal_direction,
+        head_vertical_direction,
+        touching_left_shoulder_with_hand,
+        touching_right_shoulder_with_hand,
+        touching_left_elbow_with_hand,
+        touching_right_elbow_with_hand,
+        torso_rotation,
+        left_arm_elevation,
+        right_arm_elevation,
+        elbow_to_left_hand_direction,
+        elbow_to_right_hand_direction
+    };
+}
+
+// Helper functions will need to be implemented
+
+function getHeadHorizontalDirection(nose, leftEar, rightEar) {
+    // Determine head direction based on landmarks
+    // return "left", "right", or "straight"
+    const dxLeft = Math.abs(nose.x - leftEar.x);
+    const dxRight = Math.abs(nose.x - rightEar.x);
+   
+    if (dxLeft < dxRight && dxLeft < 0.02) {
+        return "left";
+    } else if (dxRight < dxLeft && dxRight < 0.02) {
+        return "right";
+    }else {
+        return "straight";
+    }
+}
+
+function getHeadVerticalDirection(nose, leftEar, rightEar) {
+    // Determine head direction based on landmarks
+    // return "left", "right", or "straight"
+    const dyUp = Math.abs(nose.y - Math.min(leftEar.y, rightEar.y));
+    const dyDown = Math.abs(nose.y - Math.max(leftEar.y, rightEar.y));
+    if (dyUp < 0.03) {
+        return "up";
+    } else if (dyDown < 0.3) {
+        return "down";
+    } else {
+        return "straight";
+    }
+}
+
+function arePointsClose(point1, pointList, threshold = 0.3, label = '') {
+    // Implement a simple distance check
+    // if the distance is less than threshold, return true
+    // this requires a proper distance function given x, y, z coordinates
+    // This is a placeholder implementation, replace with actual logic
+    let distanceSummary = [];
+    for(let i = 0; i < pointList.length; i++) {
+        const point2 = pointList[i];
+        const dx = Math.pow(point2.x - point1.x, 2);
+        const dy = Math.pow(point2.y - point1.y, 2);
+        const distance = Math.sqrt(dx + dy);
+        distanceSummary.push(`${label} to point ${i}: ${distance}`);
+        if(distance < threshold) {
+            return true;
+        }
+    }
+    console.log(distanceSummary.join('\n'));
+    return false;
+}
+
+function getTorsoRotation(leftShoulder, rightShoulder) {
+    // Determine torso rotation based on shoulders landmarks
+    // return "left", "right", or "straight"
+    // This is a placeholder implementation, replace with actual logic
+    // return "straight";
+    const dx = rightShoulder.x - leftShoulder.x;
+    const dy = rightShoulder.y - leftShoulder.y;
+    if (Math.abs(dx) > 0.02) {
+        // The rotation is primarily horizontal
+        return dx > 0 ? "right" : "left";
+    } else if (Math.abs(dy) > 0.02) {
+        // The rotation is primarily vertical
+        return dy > 0 ? "down" : "up";
+    } else {
+        // The rotation is within the dead zone
+        return "straight";
+    }
+}
+
+function getArmElevation(shoulder, elbow) {
+    // Determine arm elevation based on shoulder and elbow positions
+    // return "low", "medium", or "high"
+    const dy = elbow.y - shoulder.y;
+    if (dy < 0) {
+        return "high";
+    } else if (dy > 0) {
+        return "low";
+    } else {
+        return "medium";
+    }
+}
+
+function getLimbDirection(joint1, joint2) {
+    // Determine limb direction based on two joint positions
+    // return "up", "down", "left", or "right"
+    const dx = joint2.x - joint1.x;
+    const dy = joint2.y - joint1.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        // The direction is primarily horizontal
+        return dx > 0 ? "left" : "right";
+    } else {
+        // The direction is primarily vertical
+        return dy > 0 ? "down" : "up";
+    }
+}
+
         let lastVideoTime = -1;
         async function predictWebcam() {
             canvasElement.style.height = "100%";
@@ -391,6 +522,15 @@
                     time: audio.currentTime,
                     pose: poseLandmarkerResult
                 });
+
+                const headHPosition = getHeadHorizontalDirection(poseLandmarkerResult.landmarks[0][0], poseLandmarkerResult.landmarks[0][7], poseLandmarkerResult.landmarks[0][8]);
+                console.log("headHPosition", headHPosition)
+                
+                if (headHPosition === "left") {
+                    slab.style.left = parseInt(slab.style.left, 10) - 50 + 'px';
+                } else if (headHPosition === "right") {
+                    slab.style.left = parseInt(slab.style.left, 10) + 50 + 'px';
+                }
 
 
                 for (const landmark of poseLandmarkerResult.landmarks) {
@@ -468,7 +608,7 @@
             <source src="media/floralshoppe-49sish.mp3">
         </audio>
         <div id="score" x-text="totalScore"></div>
-        <div id="slab" class="window">
+        <div id="slab" class="window" style="position:absolute">
             <div class="title-bar">
                 <div class="title-bar-text">The Moves</div>
                 <div class="title-bar-controls">
